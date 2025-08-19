@@ -1,5 +1,6 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from "react-router-dom";
+import './App.css';
 
 const products = [
   { title: "Plasma TV set", icon: "fa-tv", current: "$567.99", original: "$10.00", discount: "", rating: 5, reviews: 1 },
@@ -32,6 +33,7 @@ function Home() {
           <span className="feature">Faster</span>
           <span className="feature">Fiction better</span>
           <span className="feature">Oscar Plus</span>
+          {/* 🔹 FIXED: Login button now redirects to /login */}
           <Link to="/login" className="feature">Login</Link>
         </div>
       </header>
@@ -39,22 +41,36 @@ function Home() {
       <section className="deals">
         <div className="section-title">
           <h2>Today Deals</h2>
-          <a href="#" className="view-all">View all <i className="fas fa-chevron-right"></i></a>
+          <a href="#" className="view-all">
+            View all <i className="fas fa-chevron-right"></i>
+          </a>
         </div>
 
         <div className="products">
           {products.map((p, index) => (
-            <div className="product-card" key={index} onClick={() => alert(`You clicked on ${p.title}`)}>
-              <div className="product-image"><i className={`fas ${p.icon}`}></i></div>
+            <div
+              className="product-card"
+              key={index}
+              onClick={() => alert(`You clicked on ${p.title}`)}
+            >
+              <div className="product-image">
+                <i className={`fas ${p.icon}`}></i>
+              </div>
               <div className="product-info">
                 <h3 className="product-title">{p.title}</h3>
                 <div className="product-pricing">
                   <span className="current-price">{p.current}</span>
-                  {p.original && <span className="original-price">{p.original}</span>}
-                  {p.discount && <span className="discount-badge">{p.discount}</span>}
+                  {p.original && (
+                    <span className="original-price">{p.original}</span>
+                  )}
+                  {p.discount && (
+                    <span className="discount-badge">{p.discount}</span>
+                  )}
                 </div>
                 <div className="product-rating">
-                  {Array.from({ length: p.rating }).map((_, i) => <i className="fas fa-star" key={i}></i>)}
+                  {Array.from({ length: p.rating }).map((_, i) => (
+                    <i className="fas fa-star" key={i}></i>
+                  ))}
                   <span>({p.reviews})</span>
                 </div>
               </div>
@@ -66,7 +82,9 @@ function Home() {
       <section className="services">
         {services.map((s, index) => (
           <div className="service" key={index}>
-            <div className="service-icon"><i className={`fas ${s.icon}`}></i></div>
+            <div className="service-icon">
+              <i className={`fas ${s.icon}`}></i>
+            </div>
             <h3 className="service-title">{s.title}</h3>
             <p className="service-desc">{s.desc}</p>
           </div>

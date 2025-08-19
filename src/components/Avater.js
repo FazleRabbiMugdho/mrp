@@ -44,7 +44,7 @@ export default function Brand({ collapsed }) {
               fontSize: 16,
             }}
           >
-            Welcome, IvKale
+            Welcome,Mugdho
           </h3>
           <div
             style={{
