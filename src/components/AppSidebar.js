@@ -51,7 +51,6 @@ export default function AppSidebar() {
             disabled={item.disabled}
             style={{ position: "relative", overflow: "hidden" }}
           >
-            {/* Animated active highlight */}
             {pathname === item.key && (
               <motion.div
                 layoutId="activeBackground"
