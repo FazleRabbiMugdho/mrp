@@ -1,18 +1,24 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { FaUser, FaEnvelope, FaPhone, FaLock, FaGoogle, FaFacebook, FaGithub, FaUsers } from "react-icons/fa";
+import { FaUser, FaEnvelope, FaPhone, FaLock, FaGoogle, FaFacebook, FaGithub, FaUsers, FaMapMarkerAlt, FaAt, FaEye, FaEyeSlash } from "react-icons/fa";
 import "./Auth.css";
 
 export default function SignupPage() {
   const [form, setForm] = useState({
     role: "merchant",
-    name: "",
+    firstName: "",
+    lastName: "",  
+    username: "",
     email: "",
-    mobile: "",
+    phone: "",
+    location: "",  
     password: "",
     confirmPassword: "",
   });
   const [passwordStrength, setPasswordStrength] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -26,20 +32,69 @@ export default function SignupPage() {
     }
   };
 
-  const handleSubmit = (e) => {
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
+  const toggleConfirmPasswordVisibility = () => {
+    setShowConfirmPassword(!showConfirmPassword);
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.name || !form.email || !form.mobile || !form.password || !form.confirmPassword) {
-      alert("Please fill all fields");
+    if (!form.firstName || !form.username || !form.email || !form.phone || !form.location || !form.password || !form.confirmPassword) {
+      alert("Please fill all required fields");
       return;
     }
     if (form.password !== form.confirmPassword) {
       alert("Passwords do not match!");
       return;
     }
-    console.log("Signup:", form);
 
-    if (form.role === "administrator") navigate("/admin-dashboard");
-    else navigate("/merchant-dashboard");
+    setLoading(true);
+    let response;
+    let data;
+
+    try {
+      response = await fetch('http://localhost:5000/api/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          firstName: form.firstName,
+          lastName: form.lastName,
+          username: form.username,
+          email: form.email,
+          password: form.password,
+          phone: form.phone,
+          location: form.location,
+        }),
+      });
+
+      data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Registration failed');
+      }
+
+      console.log("Signup successful:", data);
+      alert('Registration Successful! Please login.');
+      navigate("/login");
+
+    } catch (error) {
+      console.error("Signup error:", error);
+      console.log("Server response status:", response?.status);
+      console.log("Server response data:", data);
+
+      if (data && data.message) {
+        alert("Registration failed: " + data.message);
+      } else {
+        alert(error.message || "Signup failed. Please try again.");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -66,31 +121,78 @@ export default function SignupPage() {
 
           <div className="input-group">
             <FaUser className="input-icon" />
-            <input type="text" name="name" placeholder="Full Name" value={form.name} onChange={handleChange} required />
+            <input type="text" name="firstName" placeholder="First Name *" value={form.firstName} onChange={handleChange} required />
+          </div>
+
+          <div className="input-group">
+            <FaUser className="input-icon" />
+            <input type="text" name="lastName" placeholder="Last Name" value={form.lastName} onChange={handleChange} />
+          </div>
+
+          <div className="input-group">
+            <FaAt className="input-icon" />
+            <input type="text" name="username" placeholder="Username *" value={form.username} onChange={handleChange} required />
           </div>
 
           <div className="input-group">
             <FaEnvelope className="input-icon" />
-            <input type="email" name="email" placeholder="Email Address" value={form.email} onChange={handleChange} required />
+            <input type="email" name="email" placeholder="Email Address *" value={form.email} onChange={handleChange} required />
           </div>
 
           <div className="input-group">
             <FaPhone className="input-icon" />
-            <input type="text" name="mobile" placeholder="Mobile Number" value={form.mobile} onChange={handleChange} required />
+            <input type="text" name="phone" placeholder="Phone Number *" value={form.phone} onChange={handleChange} required />
           </div>
 
           <div className="input-group">
+            <FaMapMarkerAlt className="input-icon" />
+            <input type="text" name="location" placeholder="Your Location *" value={form.location} onChange={handleChange} required />
+          </div>
+
+          <div className="input-group password-group">
             <FaLock className="input-icon" />
-            <input type="password" name="password" placeholder="Password" value={form.password} onChange={handleChange} required />
+            <input 
+              type={showPassword ? "text" : "password"} 
+              name="password" 
+              placeholder="Password *" 
+              value={form.password} 
+              onChange={handleChange} 
+              required 
+            />
+            <button
+              type="button"
+              className={`password-toggle ${showPassword ? 'visible' : ''}`}
+              onClick={togglePasswordVisibility}
+              disabled={loading}
+            >
+              {showPassword ? <FaEyeSlash /> : <FaEye />}
+            </button>
           </div>
           <div className="password-strength">{passwordStrength}</div>
 
-          <div className="input-group">
+          <div className="input-group password-group">
             <FaLock className="input-icon" />
-            <input type="password" name="confirmPassword" placeholder="Confirm Password" value={form.confirmPassword} onChange={handleChange} required />
+            <input 
+              type={showConfirmPassword ? "text" : "password"} 
+              name="confirmPassword" 
+              placeholder="Confirm Password *" 
+              value={form.confirmPassword} 
+              onChange={handleChange} 
+              required 
+            />
+            <button
+              type="button"
+              className={`password-toggle ${showConfirmPassword ? 'visible' : ''}`}
+              onClick={toggleConfirmPasswordVisibility}
+              disabled={loading}
+            >
+              {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+            </button>
           </div>
 
-          <button type="submit" className="auth-btn">Sign Up</button>
+          <button type="submit" className="auth-btn" disabled={loading}>
+            {loading ? "Creating Account..." : "Sign Up"}
+          </button>
         </form>
 
         <p className="auth-footer">
@@ -100,5 +202,3 @@ export default function SignupPage() {
     </div>
   );
 }
-
-

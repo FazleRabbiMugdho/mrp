@@ -1,11 +1,12 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { FaEnvelope, FaLock, FaGoogle, FaFacebook, FaGithub } from "react-icons/fa";
+import { FaEnvelope, FaLock, FaGoogle, FaFacebook, FaGithub, FaEye, FaEyeSlash } from "react-icons/fa";
 import "./Auth.css";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -18,34 +19,62 @@ export default function LoginPage() {
     }
 
     setLoading(true);
+    let response;
+    let data;
     
     try {
-      // Simulate login validation (replace with actual API call)
-      console.log("Login attempt:", { email, password });
+      // CORRECTED: Using the proper login endpoint
+      response = await fetch('http://localhost:5000/api/users/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || data.error || 'Login failed');
+      }
+
+      // Save token and user data properly
+      localStorage.setItem("userToken", data.token);
+      localStorage.setItem("userData", JSON.stringify(data.user));
       
-      // Set authentication token
-      localStorage.setItem("userToken", "authenticated");
-      localStorage.setItem("userData", JSON.stringify({
-        email: email,
-        loggedIn: true,
-        timestamp: new Date().toISOString()
-      }));
+      console.log("Login successful!", data.user);
       
       // Navigate to dashboard
       navigate("/dashboard", { replace: true });
       
     } catch (error) {
       console.error("Login error:", error);
-      alert("Login failed. Please try again.");
+      console.log("Server response status:", response?.status);
+      console.log("Server response data:", data);
+
+      // Show specific error message from server
+      if (data && data.error) {
+        alert("Login failed: " + (data.details || data.error));
+      } else if (data && data.message) {
+        alert("Login failed: " + data.message);
+      } else {
+        alert(error.message || "Login failed. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
   };
 
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
+  };
+
   // Check if user is already logged in
   React.useEffect(() => {
     const userToken = localStorage.getItem("userToken");
-    if (userToken) {
+    const userData = localStorage.getItem("userData");
+    
+    if (userToken && userData) {
       navigate("/dashboard", { replace: true });
     }
   }, [navigate]);
@@ -56,9 +85,9 @@ export default function LoginPage() {
         <h2 className="auth-title">Log in to Your Account</h2>
 
         <div className="social-buttons">
-          <button className="social-btn google-btn"><FaGoogle />&nbsp; Google</button>
-          <button className="social-btn facebook-btn"><FaFacebook />&nbsp; Facebook</button>
-          <button className="social-btn github-btn"><FaGithub />&nbsp; GitHub</button>
+          <button type="button" className="social-btn google-btn"><FaGoogle />&nbsp; Google</button>
+          <button type="button" className="social-btn facebook-btn"><FaFacebook />&nbsp; Facebook</button>
+          <button type="button" className="social-btn github-btn"><FaGithub />&nbsp; GitHub</button>
         </div>
 
         <div className="divider">or</div>
@@ -72,18 +101,28 @@ export default function LoginPage() {
               value={email} 
               onChange={(e) => setEmail(e.target.value)} 
               required 
+              disabled={loading}
             />
           </div>
 
-          <div className="input-group">
+          <div className="input-group password-group">
             <FaLock className="input-icon" />
             <input 
-              type="password" 
+              type={showPassword ? "text" : "password"} 
               placeholder="Password" 
               value={password} 
               onChange={(e) => setPassword(e.target.value)} 
               required 
+              disabled={loading}
             />
+            <button
+              type="button"
+              className={`password-toggle ${showPassword ? 'visible' : ''}`}
+              onClick={togglePasswordVisibility}
+              disabled={loading}
+            >
+              {showPassword ? <FaEyeSlash /> : <FaEye />}
+            </button>
           </div>
 
           <button type="submit" className="auth-btn" disabled={loading}>

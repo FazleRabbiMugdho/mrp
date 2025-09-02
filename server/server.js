@@ -16,6 +16,17 @@ app.use(express.json());
 app.use('/api/users', userRoutes);
 app.use('/api/transactions', transactionRoutes);
 
+// ADD THIS DEBUG CODE RIGHT HERE
+console.log('=== DEBUG: Checking User Routes ===');
+const userRouteStack = userRoutes.stack;
+userRouteStack.forEach(layer => {
+  if (layer.route) {
+    const methods = Object.keys(layer.route.methods).map(method => method.toUpperCase());
+    console.log(`Route: ${methods} /api/users${layer.route.path}`);
+  }
+});
+console.log('===================================');
+
 app.get('/', (req, res) => {
   res.json({ 
     message: 'MRP Server API',
@@ -29,7 +40,9 @@ app.get('/', (req, res) => {
       updateUser: 'PUT /api/users/:username',
       changePassword: 'PATCH /api/users/:username/password',
       createTransaction: 'POST /api/transactions',
-      getTransactions: 'GET /api/transactions'
+      getTransactions: 'GET /api/transactions',
+      // ADD THE LOGIN ENDPOINT TO THE LIST
+      loginUser: 'POST /api/users/login'
     }
   });
 });

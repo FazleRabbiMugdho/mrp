@@ -11,7 +11,35 @@ export function UserProvider({ children }) {
   const fetchUser = async () => {
     try {
       console.log('Fetching user from server...');
-      const response = await fetch(`${API_BASE}/users/Mugdho_4002`);
+      
+      // Get the token from localStorage
+      const token = localStorage.getItem('userToken');
+      if (!token) {
+        console.error('No token found');
+        setLoading(false);
+        return;
+      }
+
+      // Get username from localStorage to use as fallback
+      const userDataFromStorage = JSON.parse(localStorage.getItem('userData') || '{}');
+      const username = userDataFromStorage?.username;
+      
+      // Try to fetch using the authenticated user endpoint first
+      let response = await fetch(`${API_BASE}/users/me`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      // If /me endpoint doesn't exist, fall back to username endpoint
+      if (response.status === 404 && username) {
+        console.log('Falling back to username endpoint');
+        response = await fetch(`${API_BASE}/users/${username}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+      }
       
       if (response.ok) {
         const userData = await response.json();
@@ -19,11 +47,23 @@ export function UserProvider({ children }) {
         setUser(userData);
       } else {
         console.error('Failed to fetch user, status:', response.status);
-        message.error("Failed to load user data");
+        // If both endpoints fail, use data from localStorage
+        if (userDataFromStorage && Object.keys(userDataFromStorage).length > 0) {
+          console.log('Using user data from localStorage');
+          setUser(userDataFromStorage);
+        } else {
+          message.error("Failed to load user data");
+        }
       }
     } catch (error) {
       console.error("Failed to fetch user:", error);
-      message.error("Server not available");
+      // Fallback to localStorage data
+      const userDataFromStorage = JSON.parse(localStorage.getItem('userData') || '{}');
+      if (userDataFromStorage && Object.keys(userDataFromStorage).length > 0) {
+        setUser(userDataFromStorage);
+      } else {
+        message.error("Server not available");
+      }
     } finally {
       setLoading(false);
     }
@@ -43,11 +83,20 @@ export function UserProvider({ children }) {
     try {
       console.log('Sending update to server:', patch);
       
-      const response = await fetch(`${API_BASE}/users/Mugdho_4002`, {
+      const token = localStorage.getItem('userToken');
+      const userDataFromStorage = JSON.parse(localStorage.getItem('userData') || '{}');
+      const username = userDataFromStorage?.username;
+
+      if (!username) {
+        throw new Error('No username found for update');
+      }
+
+      const response = await fetch(`${API_BASE}/users/${username}`, {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
-          'Accept': 'application/json'
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify(patch),
       });
@@ -58,6 +107,14 @@ export function UserProvider({ children }) {
         const updatedUser = await response.json();
         console.log('Server response data:', updatedUser);
         setUser(updatedUser.user || updatedUser);
+        
+        // Update localStorage with new data
+        const currentUserData = JSON.parse(localStorage.getItem('userData') || '{}');
+        localStorage.setItem('userData', JSON.stringify({
+          ...currentUserData,
+          ...updatedUser.user || updatedUser
+        }));
+        
         message.success("Profile updated successfully");
         return updatedUser;
       } else {
@@ -75,9 +132,20 @@ export function UserProvider({ children }) {
 
   const changePassword = async ({ oldPassword, newPassword }) => {
     try {
-      const response = await fetch(`${API_BASE}/users/Mugdho_4002/password`, {
+      const token = localStorage.getItem('userToken');
+      const userDataFromStorage = JSON.parse(localStorage.getItem('userData') || '{}');
+      const username = userDataFromStorage?.username;
+
+      if (!username) {
+        throw new Error('No username found for password change');
+      }
+
+      const response = await fetch(`${API_BASE}/users/${username}/password`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({ oldPassword, newPassword }),
       });
       

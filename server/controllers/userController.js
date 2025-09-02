@@ -1,32 +1,78 @@
 import User from '../models/User.js';
+import { generateToken } from '../middleware/auth.js';
+import bcrypt from 'bcryptjs';
 
 export const createUser = async (req, res) => {
   try {
     console.log('CREATE USER REQUEST');
     console.log('Request body:', JSON.stringify(req.body, null, 2));
 
-    const user = new User(req.body);
+    // Validate required fields
+    const { firstName, lastName, username, email, phone, location, password } = req.body;
+    
+    // Check for missing fields
+    if (!firstName || !lastName || !username || !email || !phone || !location || !password) {
+      return res.status(400).json({ 
+        error: 'Validation failed', 
+        details: 'All fields are required' 
+      });
+    }
+
+    console.log('📝 Raw password received:', password);
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ 
+      $or: [{ email: email.toLowerCase() }, { username: username.toLowerCase() }] 
+    });
+    
+    if (existingUser) {
+      return res.status(400).json({ 
+        error: 'Duplicate field value', 
+        details: 'A user with this email or username already exists' 
+      });
+    }
+
+    // Create user with raw password (middleware will hash it)
+    const user = new User({
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      username: username.toLowerCase().trim(),
+      email: email.toLowerCase().trim(),
+      phone: phone.trim(),
+      location: location.trim(),
+      password: password
+    });
+
+    // Check if password is being set correctly before save
+    console.log('🔍 User object password before save:', user.password);
+    
     await user.save();
     
-    console.log('User created successfully:', user.username);
+    console.log('✅ User created successfully:', user.username);
+    console.log('🔒 Final hashed password in DB:', user.password);
     
-    const userResponse = user.toObject();
-    delete userResponse.password;
+    // Get user response without password
+    const userResponse = user.toSafeObject();
     
-    res.status(201).json(userResponse);
+    res.status(201).json({
+      message: 'User created successfully',
+      user: userResponse
+    });
   } catch (error) {
     console.error('CREATE USER ERROR');
     console.error('Error name:', error.name);
     console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
     
     if (error.name === 'ValidationError') {
+      const errors = Object.values(error.errors).map(err => err.message);
       return res.status(400).json({ 
         error: 'Validation failed', 
-        details: error.message 
+        details: errors.join(', ') 
       });
     }
     
-    if (error.name === 'MongoError' && error.code === 11000) {
+    if (error.name === 'MongoServerError' && error.code === 11000) {
       return res.status(400).json({ 
         error: 'Duplicate field value', 
         details: 'A user with this email or username already exists' 
@@ -40,10 +86,75 @@ export const createUser = async (req, res) => {
   }
 };
 
+// LOGIN FUNCTION
+export const loginUser = async (req, res) => {
+  try {
+    console.log('LOGIN USER REQUEST');
+    console.log('Request body:', JSON.stringify(req.body, null, 2));
+
+    const { email, password } = req.body;
+
+    // 1. Check if email and password are provided
+    if (!email || !password) {
+      return res.status(400).json({ 
+        error: 'Validation failed', 
+        details: 'Email and password are required' 
+      });
+    }
+
+    // 2. Check if user exists
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
+    if (!user) {
+      console.log('Login failed: User not found with email:', email);
+      return res.status(400).json({ 
+        error: 'Authentication failed', 
+        details: 'Invalid email or password' 
+      });
+    }
+
+    // 3. Check password with bcrypt
+    console.log('Comparing password for user:', user.username);
+    const isPasswordValid = await user.comparePassword(password);
+    
+    if (!isPasswordValid) {
+      console.log('Login failed: Invalid password for user:', user.username);
+      return res.status(400).json({ 
+        error: 'Authentication failed', 
+        details: 'Invalid email or password' 
+      });
+    }
+
+    // 4. Generate JWT token
+    const token = generateToken(user._id.toString());
+    console.log('✅ Generated token for user ID:', user._id.toString());
+
+    // 5. Login successful - return user data (without password) and token
+    const userResponse = user.toSafeObject();
+    
+    console.log('Login successful for user:', user.username);
+    
+    res.json({
+      message: 'Login successful',
+      token,
+      user: userResponse
+    });
+
+  } catch (error) {
+    console.error('LOGIN USER ERROR');
+    console.error('Error name:', error.name);
+    console.error('Error message:', error.message);
+    
+    res.status(500).json({ 
+      error: 'Internal server error',
+      details: 'Server error during login' 
+    });
+  }
+};
+
 export const getAllUsers = async (req, res) => {
   try {
     console.log('GET ALL USERS REQUEST');
-    const users = await User.find({}).select('-password');
+    const users = await User.find({}).select('-password -__v');
     console.log('Users found:', users.length);
     res.json(users);
   } catch (error) {
@@ -62,20 +173,30 @@ export const createInitialUser = async (req, res) => {
       return res.status(400).json({ message: 'User already exists' });
     }
 
+    // Hash password manually for initial user
+    const salt = await bcrypt.genSalt(12);
+    const hashedPassword = await bcrypt.hash('password123', salt);
+
     const user = new User({
       firstName: 'Fazle Rabbi',
-      lastName: 'Mugdho test',
-      username: 'Mugdho_4002',
+      lastName: 'Mugdho',
+      username: 'mugdho_4002',
       email: 'mugdho@gmail.com',
-      phone: '+880 1780 803 694',
+      phone: '+8801780803694',
       location: 'Dhaka, Bangladesh',
-      password: '$2a$12$p0/AUEmn31s/0BO4lvFZ3uSNcPilaa0.2SHWpngpt90ZKbncXWUWC',
+      password: hashedPassword,
       role: 'User'
     });
 
     await user.save();
     console.log('Initial user created successfully');
-    res.status(201).json({ message: 'Initial user created successfully', user });
+    
+    const userResponse = user.toSafeObject();
+    
+    res.status(201).json({ 
+      message: 'Initial user created successfully', 
+      user: userResponse 
+    });
   } catch (error) {
     console.error('Create initial user error:', error.message);
     res.status(500).json({ error: 'Failed to create initial user' });
@@ -91,7 +212,7 @@ export const getUser = async (req, res) => {
     
     const user = await User.findOne({ 
       username: { $regex: new RegExp(`^${username}$`, 'i') } 
-    }).select('-password');
+    }).select('-password -__v');
     
     if (!user) {
       console.log('User not found');
@@ -119,6 +240,7 @@ export const updateUser = async (req, res) => {
       return res.status(400).json({ message: 'No update data provided' });
     }
 
+    // Remove password from updates
     if (updates.password) {
       delete updates.password;
     }
@@ -154,8 +276,7 @@ export const updateUser = async (req, res) => {
 
     const updatedUser = await user.save();
     
-    const userResponse = updatedUser.toObject();
-    delete userResponse.password;
+    const userResponse = updatedUser.toSafeObject();
 
     console.log('User updated successfully');
     res.json({ 
@@ -169,13 +290,14 @@ export const updateUser = async (req, res) => {
     console.error('Error message:', error.message);
     
     if (error.name === 'ValidationError') {
+      const errors = Object.values(error.errors).map(err => err.message);
       return res.status(400).json({ 
         error: 'Validation failed', 
-        details: error.message 
+        details: errors.join(', ') 
       });
     }
     
-    if (error.name === 'MongoError' && error.code === 11000) {
+    if (error.name === 'MongoServerError' && error.code === 11000) {
       return res.status(400).json({ 
         error: 'Duplicate field value', 
         details: 'A user with this email or username already exists' 
@@ -208,6 +330,13 @@ export const changePassword = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
+    // Verify current password
+    const isCurrentPasswordValid = await user.comparePassword(currentPassword);
+    if (!isCurrentPasswordValid) {
+      return res.status(400).json({ message: 'Current password is incorrect' });
+    }
+
+    // Set new password (middleware will hash it)
     user.password = newPassword;
     await user.save();
 
