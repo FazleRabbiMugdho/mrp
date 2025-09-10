@@ -1,6 +1,7 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { UserProvider } from "./state/UserProvider";
+import Landing from "./Landing";   
 import Home from "./home";
 import LoginPage from "./components/LoginPage";
 import SignupPage from "./components/SignupPage";
@@ -14,12 +15,16 @@ function App() {
     <UserProvider>
       <Router>
         <Routes>
-          <Route path="/" element={<Home />} />
+          
+          <Route path="/" element={<Landing />} />
+
+          <Route path="/home" element={<Home />} />
+
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/merchant-dashboard" element={<h1>Merchant Dashboard 🛒</h1>} />
           <Route path="/admin-dashboard" element={<h1>Administrator Dashboard 🛠️</h1>} />
-          
+
           <Route path="/" element={<DashboardLayout />}>
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="new-transaction" element={<NewTransaction />} />
