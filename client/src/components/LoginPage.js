@@ -23,7 +23,7 @@ export default function LoginPage() {
     let data;
     
     try {
-      // CORRECTED: Using the proper login endpoint
+      
       response = await fetch('http://localhost:5000/api/users/login', {
         method: 'POST',
         headers: {

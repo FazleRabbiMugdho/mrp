@@ -7,10 +7,10 @@ export const createUser = async (req, res) => {
     console.log('CREATE USER REQUEST');
     console.log('Request body:', JSON.stringify(req.body, null, 2));
 
-    // Validate required fields
+   
     const { firstName, lastName, username, email, phone, location, password } = req.body;
     
-    // Check for missing fields
+   
     if (!firstName || !lastName || !username || !email || !phone || !location || !password) {
       return res.status(400).json({ 
         error: 'Validation failed', 
@@ -20,7 +20,7 @@ export const createUser = async (req, res) => {
 
     console.log('📝 Raw password received:', password);
 
-    // Check if user already exists
+    
     const existingUser = await User.findOne({ 
       $or: [{ email: email.toLowerCase() }, { username: username.toLowerCase() }] 
     });
@@ -32,7 +32,7 @@ export const createUser = async (req, res) => {
       });
     }
 
-    // Create user with raw password (middleware will hash it)
+    
     const user = new User({
       firstName: firstName.trim(),
       lastName: lastName.trim(),
@@ -43,7 +43,6 @@ export const createUser = async (req, res) => {
       password: password
     });
 
-    // Check if password is being set correctly before save
     console.log('🔍 User object password before save:', user.password);
     
     await user.save();
@@ -51,7 +50,6 @@ export const createUser = async (req, res) => {
     console.log('✅ User created successfully:', user.username);
     console.log('🔒 Final hashed password in DB:', user.password);
     
-    // Get user response without password
     const userResponse = user.toSafeObject();
     
     res.status(201).json({
@@ -86,7 +84,6 @@ export const createUser = async (req, res) => {
   }
 };
 
-// LOGIN FUNCTION
 export const loginUser = async (req, res) => {
   try {
     console.log('LOGIN USER REQUEST');
@@ -94,7 +91,6 @@ export const loginUser = async (req, res) => {
 
     const { email, password } = req.body;
 
-    // 1. Check if email and password are provided
     if (!email || !password) {
       return res.status(400).json({ 
         error: 'Validation failed', 
@@ -102,7 +98,6 @@ export const loginUser = async (req, res) => {
       });
     }
 
-    // 2. Check if user exists
     const user = await User.findOne({ email: email.toLowerCase().trim() });
     if (!user) {
       console.log('Login failed: User not found with email:', email);
@@ -112,7 +107,6 @@ export const loginUser = async (req, res) => {
       });
     }
 
-    // 3. Check password with bcrypt
     console.log('Comparing password for user:', user.username);
     const isPasswordValid = await user.comparePassword(password);
     
@@ -124,11 +118,9 @@ export const loginUser = async (req, res) => {
       });
     }
 
-    // 4. Generate JWT token
     const token = generateToken(user._id.toString());
     console.log('✅ Generated token for user ID:', user._id.toString());
 
-    // 5. Login successful - return user data (without password) and token
     const userResponse = user.toSafeObject();
     
     console.log('Login successful for user:', user.username);
@@ -173,7 +165,6 @@ export const createInitialUser = async (req, res) => {
       return res.status(400).json({ message: 'User already exists' });
     }
 
-    // Hash password manually for initial user
     const salt = await bcrypt.genSalt(12);
     const hashedPassword = await bcrypt.hash('password123', salt);
 
@@ -240,7 +231,6 @@ export const updateUser = async (req, res) => {
       return res.status(400).json({ message: 'No update data provided' });
     }
 
-    // Remove password from updates
     if (updates.password) {
       delete updates.password;
     }
@@ -330,13 +320,11 @@ export const changePassword = async (req, res) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Verify current password
     const isCurrentPasswordValid = await user.comparePassword(currentPassword);
     if (!isCurrentPasswordValid) {
       return res.status(400).json({ message: 'Current password is incorrect' });
     }
 
-    // Set new password (middleware will hash it)
     user.password = newPassword;
     await user.save();
 
