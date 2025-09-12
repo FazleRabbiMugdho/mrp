@@ -1,0 +1,339 @@
+/* ===== Background with moving gradient ===== */
+.auth-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background: linear-gradient(-45deg, #f39c12, #d35400, #2c3e50, #34495e);
+  background-size: 400% 400%;
+  animation: gradientMove 15s ease infinite;
+  font-family: 'Segoe UI', sans-serif;
+  padding: 1rem;
+}
+
+@keyframes gradientMove {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* ===== Card ===== */
+.auth-card {
+  background: rgba(0, 0, 0, 0.75);
+  padding: 2rem;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 450px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.6);
+  text-align: center;
+  color: #fff;
+  animation: fadeIn 0.6s ease-in-out;
+  margin: 1rem;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== Logo ===== */
+.auth-logo {
+  width: 160px;
+  margin-bottom: 0.8rem;
+  filter: drop-shadow(0 0 6px #f39c12);
+}
+
+/* ===== Title ===== */
+.auth-title {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #f39c12;
+}
+
+/* ===== Input Groups ===== */
+.input-group {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+  border: 1px solid #555;
+  border-radius: 10px;
+  padding: 0 10px;
+  background: rgba(255, 255, 255, 0.05);
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.input-group:hover,
+.input-group:focus-within {
+  border-color: #f39c12;
+  box-shadow: 0 0 10px #f39c12;
+}
+
+.input-group input,
+.input-group select {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  outline: none;
+  font-size: 1rem;
+  background: transparent;
+  color: #fff;
+}
+
+.input-group select {
+  appearance: none;
+  cursor: pointer;
+}
+
+.input-icon {
+  margin-right: 10px;
+  color: #f39c12;
+  font-size: 1.2rem;
+}
+
+/* Select Group Styling */
+.select-group::after {
+  content: "▼";
+  color: #f39c12;
+  position: absolute;
+  right: 15px;
+  pointer-events: none;
+}
+
+/* ===== Button ===== */
+.auth-btn {
+  width: 100%;
+  padding: 12px;
+  background: #f39c12;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  cursor: pointer;
+  font-weight: 600;
+  margin-top: 10px;
+  transition: background 0.3s ease, box-shadow 0.3s ease;
+}
+
+.auth-btn:hover:not(:disabled) {
+  background: #e67e22;
+  box-shadow: 0 0 12px #e67e22;
+}
+
+.auth-btn:disabled {
+  background: #7f8c8d;
+  cursor: not-allowed;
+}
+
+/* ===== Footer ===== */
+.auth-footer {
+  margin-top: 15px;
+  font-size: 0.95rem;
+  color: #aaa;
+}
+
+.auth-footer a {
+  color: #f39c12;
+  text-decoration: none;
+  font-weight: bold;
+  transition: color 0.3s ease;
+}
+
+.auth-footer a:hover {
+  color: #e67e22;
+  text-decoration: underline;
+}
+
+/* ===== Password Toggle ===== */
+.password-group {
+  position: relative;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #bbb;
+  cursor: pointer;
+  padding: 5px;
+  transition: all 0.3s ease;
+  z-index: 2;
+}
+
+.password-toggle:hover:not(:disabled) {
+  color: #f39c12;
+}
+
+.password-toggle.visible {
+  color: #f39c12;
+}
+
+.password-toggle:disabled {
+  color: #7f8c8d;
+  cursor: not-allowed;
+}
+
+.password-group input {
+  padding-right: 50px !important;
+}
+
+/* ===== Divider ===== */
+.divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 20px 0;
+  color: #aaa;
+  font-size: 0.9rem;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid #555;
+}
+
+.divider::before {
+  margin-right: 10px;
+}
+
+.divider::after {
+  margin-left: 10px;
+}
+
+/* ===== Password Strength ===== */
+.password-strength {
+  text-align: left;
+  margin: -10px 0 15px 5px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.password-strength.strong {
+  color: #2ecc71;
+}
+
+.password-strength.medium {
+  color: #f39c12;
+}
+
+.password-strength.weak {
+  color: #e74c3c;
+}
+
+/* ===== Error Styling ===== */
+.input-group input.error,
+.input-group select.error {
+  border-color: #e74c3c !important;
+}
+
+.error-text {
+  display: block;
+  text-align: left;
+  color: #e74c3c;
+  font-size: 0.85rem;
+  margin: -10px 0 15px 5px;
+  font-weight: 500;
+}
+
+/* ===== Loading Animation ===== */
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+.loading {
+  animation: pulse 1.5s infinite;
+}
+
+/* ===== Role Selection Styles ===== */
+.role-selection {
+  margin-bottom: 20px;
+}
+
+.role-title {
+  text-align: left;
+  margin-bottom: 12px;
+  color: #f39c12;
+  font-size: 1.1rem;
+}
+
+.role-options {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 10px;
+}
+
+.role-option {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  padding: 15px;
+  border: 2px solid #555;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.role-option:hover {
+  border-color: #f39c12;
+  background: rgba(243, 156, 18, 0.1);
+}
+
+.role-option.selected {
+  border-color: #f39c12;
+  background: rgba(243, 156, 18, 0.15);
+  box-shadow: 0 0 15px rgba(243, 156, 18, 0.3);
+}
+
+.role-icon {
+  margin-right: 12px;
+  font-size: 1.8rem;
+  color: #f39c12;
+}
+
+.role-info h4 {
+  margin: 0 0 5px 0;
+  color: #fff;
+  font-size: 1rem;
+}
+
+.role-info p {
+  margin: 0;
+  color: #bbb;
+  font-size: 0.8rem;
+}
+
+/* ===== Responsive Design ===== */
+@media (max-width: 480px) {
+  .auth-card {
+    padding: 1.5rem;
+  }
+  
+  .auth-title {
+    font-size: 1.5rem;
+  }
+  
+  .role-options {
+    flex-direction: column;
+  }
+  
+  .input-group {
+    padding: 0 8px;
+  }
+  
+  .input-group input,
+  .input-group select {
+    padding: 10px;
+    font-size: 0.9rem;
+  }
+}
+
