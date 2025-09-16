@@ -1,13 +1,30 @@
 import React, { useState, useEffect } from "react";
-import { Card, Descriptions, Tag, Button, Modal, Form, Input, Row, Col, Select, message, Spin } from "antd";
+import {
+  Card,
+  Descriptions,
+  Tag,
+  Button,
+  Modal,
+  Form,
+  Input,
+  Row,
+  Col,
+  message,
+  Spin,
+  Select,
+} from "antd";
 import { EditOutlined, SyncOutlined } from "@ant-design/icons";
 import { useUser } from "../state/UserProvider";
-import profileImage from "../assets/profile.jpg";
+import profileImage from "../assets/profile.png";
 
-const countryCodes = [
-  { value: "+880", label: "+880" },
-  { value: "+1", label: "+1" },
-  { value: "+44", label: "+44" },
+const districts = [
+  "Dhaka",
+  "Chattogram",
+  "Khulna",
+  "Rajshahi",
+  "Barishal",
+  "Sylhet",
+  "Rangpur",
 ];
 
 export default function Dashboard() {
@@ -19,15 +36,16 @@ export default function Dashboard() {
   const [pwdForm] = Form.useForm();
 
   useEffect(() => {
-    console.log('Current user data:', user);
-  }, [user]);
+    if (!user) {
+      refreshUser().catch(() => {});
+    }
+  }, []);
 
   const refreshUserData = async () => {
     setRefreshing(true);
     try {
       await refreshUser();
-    } catch (error) {
-      console.error("Failed to refresh data:", error);
+    } catch {
       message.error("Failed to refresh data");
     } finally {
       setRefreshing(false);
@@ -36,15 +54,13 @@ export default function Dashboard() {
 
   const openEdit = () => {
     if (!user) return;
-    
-    const [code, ...rest] = (user.phone || "").split(" ");
+    const phone = user.phone?.replace("+8801", "") || "";
     profileForm.setFieldsValue({
       firstName: user.firstName,
       lastName: user.lastName,
       username: user.username,
       email: user.email,
-      phoneCode: code || "+880",
-      phoneNumber: rest.join(" ") || "",
+      phoneNumber: phone,
       location: user.location,
     });
     pwdForm.resetFields();
@@ -55,24 +71,17 @@ export default function Dashboard() {
     try {
       const values = await profileForm.validateFields();
       setSaving(true);
-      
       const updatedData = {
         firstName: values.firstName,
         lastName: values.lastName,
-        username: values.username,
+        username: user.username,
         email: values.email,
-        phone: `${values.phoneCode} ${values.phoneNumber}`.trim(),
+        phone: `+8801${values.phoneNumber}`,
         location: values.location,
       };
-      
-      console.log('Attempting to update with:', updatedData);
-      
-      const result = await updateUser(updatedData);
-      console.log('Update successful:', result);
-      
+      await updateUser(updatedData);
       setOpen(false);
     } catch (err) {
-      console.error("Save error:", err);
       message.error(err.message || "Failed to update profile");
     } finally {
       setSaving(false);
@@ -86,14 +95,12 @@ export default function Dashboard() {
         message.error("Passwords don't match");
         return;
       }
-      
       setSaving(true);
       await changePassword({
         oldPassword: v.oldPassword,
-        newPassword: v.newPassword
+        newPassword: v.newPassword,
       });
-    } catch (err) {
-      console.error("Password error:", err);
+    } catch {
     } finally {
       setSaving(false);
     }
@@ -106,14 +113,12 @@ export default function Dashboard() {
       if (pwdVals.oldPassword && pwdVals.newPassword) {
         await onChangePassword();
       }
-    } catch (error) {
-      console.error('Modal save error:', error);
-    }
+    } catch {}
   };
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "50vh" }}>
         <Spin size="large" />
       </div>
     );
@@ -135,7 +140,7 @@ export default function Dashboard() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
         <h2>Your personal profile info</h2>
         <Button icon={<SyncOutlined />} loading={refreshing} onClick={refreshUserData}>
           Refresh
@@ -161,7 +166,7 @@ export default function Dashboard() {
           <Descriptions.Item label="Location">{user.location}</Descriptions.Item>
           <Descriptions.Item label="User ID">{user._id}</Descriptions.Item>
           <Descriptions.Item label="Last Updated">
-            {user.updatedAt ? new Date(user.updatedAt).toLocaleString() : 'Unknown'}
+            {user.updatedAt ? new Date(user.updatedAt).toLocaleString() : "Unknown"}
           </Descriptions.Item>
         </Descriptions>
 
@@ -180,7 +185,6 @@ export default function Dashboard() {
         width={800}
       >
         <h3>Edit Profile</h3>
-        
         <Row gutter={20}>
           <Col xs={24} md={12}>
             <Form form={profileForm} layout="vertical">
@@ -190,30 +194,43 @@ export default function Dashboard() {
               <Form.Item name="lastName" label="Last name" rules={[{ required: true }]}>
                 <Input />
               </Form.Item>
-              <Form.Item name="username" label="Username" rules={[{ required: true }]}>
+              <Form.Item name="username" label="Username">
+                <Input disabled />
+              </Form.Item>
+              <Form.Item
+                name="email"
+                label="Email"
+                rules={[
+                  { required: true, message: "Email is required" },
+                  { type: "email", message: "Invalid email format" },
+                  {
+                    validator: (_, value) =>
+                      value && !value.endsWith("@gmail.com")
+                        ? Promise.reject("Email must be a Gmail address")
+                        : Promise.resolve(),
+                  },
+                ]}
+              >
                 <Input />
               </Form.Item>
-              <Form.Item name="email" label="Email" rules={[{ type: "email", required: true }]}>
-                <Input />
+              <Form.Item
+                name="phoneNumber"
+                label="Phone Number (after +8801)"
+                rules={[
+                  { required: true, message: "Phone number is required" },
+                  {
+                    pattern: /^[3579][0-9]{8}$/,
+                    message: "Must start with 3,5,7,9 and be 9 digits total",
+                  },
+                ]}
+              >
+                <Input addonBefore="+8801" maxLength={9} />
               </Form.Item>
-              
-              <Form.Item label="Phone number">
-                <Input.Group compact>
-                  <Form.Item name="phoneCode" noStyle rules={[{ required: true }]}>
-                    <Select options={countryCodes} style={{ width: "30%" }} />
-                  </Form.Item>
-                  <Form.Item name="phoneNumber" noStyle rules={[{ required: true }]}>
-                    <Input style={{ width: "70%" }} placeholder="Phone number" />
-                  </Form.Item>
-                </Input.Group>
-              </Form.Item>
-              
               <Form.Item name="location" label="Location" rules={[{ required: true }]}>
-                <Input />
+                <Select options={districts.map((d) => ({ label: d, value: d }))} />
               </Form.Item>
             </Form>
           </Col>
-
           <Col xs={24} md={12}>
             <h4>Change Password</h4>
             <Form form={pwdForm} layout="vertical">
