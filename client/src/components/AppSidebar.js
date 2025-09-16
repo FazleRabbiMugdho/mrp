@@ -14,11 +14,10 @@ import "../styles/sidebar.css";
 
 const items = [
   { key: "/dashboard", icon: <DashboardOutlined />, label: "Dashboard" },
-  { key: "/new-transaction", icon: <TranslationOutlined />, label: "New Transaction", disabled: false },
-  { key: "/my-translators", icon: <TeamOutlined />, label: "My Translators", disabled: true },
-  { key: "/billing", icon: <CreditCardOutlined />, label: "Billing & Payment", disabled: true },
+  { key: "/new-transaction", icon: <TranslationOutlined />, label: "New Transaction" },
+  { key: "/transactions", icon: <TeamOutlined />, label: "My Transactions" },
   { key: "/settings", icon: <SettingOutlined />, label: "Settings" },
-  { key: "logout", icon: <LogoutOutlined />, label: "Log Out", disabled: false },
+  { key: "logout", icon: <LogoutOutlined />, label: "Log Out" },
 ];
 
 export default function AppSidebar() {
@@ -30,9 +29,7 @@ export default function AppSidebar() {
     localStorage.removeItem("userData");
     message.success("Logged out successfully");
     navigate("/login", { replace: true });
-    setTimeout(() => {
-      window.location.reload();
-    }, 100);
+    setTimeout(() => window.location.reload(), 100);
   };
 
   const handleMenuClick = (key) => {
@@ -40,7 +37,9 @@ export default function AppSidebar() {
       handleLogout();
     } else {
       const item = items.find((i) => i.key === key);
-      if (item && !item.disabled) navigate(key);
+      if (item && !item.disabled) {
+        navigate(key);
+      }
     }
   };
 

@@ -14,29 +14,31 @@ export default function DashboardLayout() {
   useEffect(() => {
     const userToken = localStorage.getItem("userToken");
     if (!userToken) {
-      navigate("/login", { replace: true });
+      setTimeout(() => {
+        navigate("/login", { replace: true });
+      }, 0);
     }
   }, [navigate]);
 
   return (
     <Layout style={{ minHeight: "100vh", background: "transparent" }}>
       <Sider
-        trigger={null} 
+        trigger={null}
         collapsible
         collapsed={collapsed}
         width={220}
         style={{
-          background: "linear-gradient(180deg, #1677ff, #1d4ed8)", 
+          background: "linear-gradient(180deg, #1677ff, #1d4ed8)",
+          position: "relative",
         }}
       >
         <Brand collapsed={collapsed} />
         <AppSidebar />
-
         <div
           style={{
             position: "absolute",
             bottom: 16,
-            left: collapsed ? 8 : 170, 
+            left: collapsed ? 8 : 170,
             transition: "all 0.3s ease",
             zIndex: 10,
           }}
@@ -44,7 +46,7 @@ export default function DashboardLayout() {
           <button
             onClick={() => setCollapsed(!collapsed)}
             style={{
-              width: 36, 
+              width: 36,
               height: 36,
               borderRadius: "50%",
               border: "none",
@@ -56,14 +58,6 @@ export default function DashboardLayout() {
               cursor: "pointer",
               transition:
                 "transform 0.3s ease, background 0.3s ease, box-shadow 0.3s ease",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = "#f1f5f9";
-              e.currentTarget.style.boxShadow = "0 8px 16px rgba(0,0,0,0.2)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "#fff";
-              e.currentTarget.style.boxShadow = "0 6px 12px rgba(0,0,0,0.15)";
             }}
           >
             <span
