@@ -1,0 +1,21 @@
+.ant-menu-item {
+  transition: all 0.25s ease !important;
+}
+
+.ant-menu-item:hover {
+  transform: translateX(6px);
+}
+
+
+.active-bg {
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #4f46e5, #3b82f6);
+  z-index: -1;
+}
+
+.menu-label {
+  position: relative;
+  z-index: 1;
+}
