@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { FaUser, FaEnvelope, FaPhone, FaLock, FaMapMarkerAlt, FaAt, FaEye, FaEyeSlash, FaStore, FaUserCog } from "react-icons/fa";
+import { motion, useMotionTemplate, useMotionValue } from "framer-motion";
 import "./Auth.css";
 import logo from "../assets/MRP logo.png";
 
@@ -22,6 +23,15 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const navigate = useNavigate();
+
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+
+  function handleMouseMove({ currentTarget, clientX, clientY }) {
+    const { left, top } = currentTarget.getBoundingClientRect();
+    mouseX.set(clientX - left);
+    mouseY.set(clientY - top);
+  }
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -116,7 +126,7 @@ export default function SignupPage() {
       data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Registration failed');
+        throw new Error(data.details || data.error || data.message || 'Registration failed');
       }
 
       console.log("Signup successful:", data);
@@ -128,8 +138,8 @@ export default function SignupPage() {
       console.log("Server response status:", response?.status);
       console.log("Server response data:", data);
 
-      if (data && data.message) {
-        alert("Registration failed: " + data.message);
+      if (data && (data.details || data.error || data.message)) {
+        alert("Registration failed: " + (data.details || data.error || data.message));
       } else {
         alert(error.message || "Signup failed. Please try again.");
       }
@@ -139,8 +149,25 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="auth-container">
-      <div className="auth-card">
+    <div className="auth-container group relative overflow-hidden" onMouseMove={handleMouseMove}>
+      <motion.div
+        className="pointer-events-none absolute -inset-px opacity-0 transition duration-300 group-hover:opacity-100 z-0"
+        style={{
+          background: useMotionTemplate`
+            radial-gradient(
+              650px circle at ${mouseX}px ${mouseY}px,
+              rgba(16, 185, 129, 0.15),
+              transparent 80%
+            )
+          `,
+        }}
+      />
+      <motion.div 
+        className="auth-card relative z-10"
+        initial={{ opacity: 0, y: 20, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+      >
         <img src={logo} alt="MRP Logo" className="auth-logo" />
         
         <h2 className="auth-title">Create a New Account</h2>
@@ -307,7 +334,7 @@ export default function SignupPage() {
         <p className="auth-footer">
           Already have an account? <Link to="/login">Log in</Link>
         </p>
-      </div>
+      </motion.div>
     </div>
   );
 }

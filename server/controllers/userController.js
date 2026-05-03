@@ -249,7 +249,7 @@ export const updateUser = async (req, res) => {
 
     console.log('User found:', user.username);
 
-    const allowedUpdates = ['firstName', 'lastName', 'email', 'phone', 'location'];
+    const allowedUpdates = ['firstName', 'lastName', 'email', 'phone', 'location', 'avatar'];
     const updatesToApply = {};
     
     Object.keys(updates).forEach(key => {

@@ -1,83 +1,75 @@
 import React from "react";
-import { Menu, message } from "antd";
-import {
-  DashboardOutlined,
-  TranslationOutlined,
-  TeamOutlined,
-  CreditCardOutlined,
-  SettingOutlined,
-  LogoutOutlined,
-} from "@ant-design/icons";
-import { useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import "../styles/sidebar.css";
+import {
+  FiGrid,
+  FiPlusSquare,
+  FiList,
+  FiSettings,
+  FiLogOut,
+} from "react-icons/fi";
+import { useUser } from "../state/UserProvider";
 
 const items = [
-  { key: "/dashboard", icon: <DashboardOutlined />, label: "Dashboard" },
-  { key: "/new-transaction", icon: <TranslationOutlined />, label: "New Transaction" },
-  { key: "/transactions", icon: <TeamOutlined />, label: "My Transactions" },
-  { key: "/settings", icon: <SettingOutlined />, label: "Settings" },
-  { key: "logout", icon: <LogoutOutlined />, label: "Log Out" },
+  { key: "/dashboard", icon: FiGrid, label: "Dashboard" },
+  { key: "/new-transaction", icon: FiPlusSquare, label: "New Transaction" },
+  { key: "/transactions", icon: FiList, label: "My Transactions" },
+  { key: "/settings", icon: FiSettings, label: "Settings" },
 ];
 
-export default function AppSidebar() {
+export default function AppSidebar({ collapsed }) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
+  const { logout } = useUser();
 
   const handleLogout = () => {
-    localStorage.removeItem("userToken");
-    localStorage.removeItem("userData");
-    message.success("Logged out successfully");
+    logout();
     navigate("/login", { replace: true });
-    setTimeout(() => window.location.reload(), 100);
-  };
-
-  const handleMenuClick = (key) => {
-    if (key === "logout") {
-      handleLogout();
-    } else {
-      const item = items.find((i) => i.key === key);
-      if (item && !item.disabled) {
-        navigate(key);
-      }
-    }
   };
 
   return (
-    <div style={{ paddingTop: 8 }}>
-      <Menu
-        theme="dark"
-        mode="inline"
-        selectedKeys={[pathname]}
-        style={{
-          background: "transparent",
-          borderInlineEnd: "none",
-          padding: "12px 6px",
-          fontSize: 15,
-          fontWeight: 500,
-          position: "relative",
-        }}
-        onClick={(e) => handleMenuClick(e.key)}
-      >
-        {items.map((item) => (
-          <Menu.Item
+    <div className="px-3 py-6 flex flex-col gap-2">
+      {items.map((item) => {
+        const isActive = pathname === item.key;
+        return (
+          <Link
             key={item.key}
-            icon={item.icon}
-            disabled={item.disabled}
-            style={{ position: "relative", overflow: "hidden" }}
+            to={item.key}
+            className={`relative flex items-center gap-4 rounded-[20px] px-4 py-3 transition-all duration-300 ${
+              isActive ? "text-emerald-600 dark:text-emerald-300" : "text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/5 hover:text-slate-900 dark:hover:text-white"
+            } ${collapsed ? "justify-center px-0" : "justify-start"}`}
           >
-            {pathname === item.key && (
+            {isActive && (
               <motion.div
-                layoutId="activeBackground"
-                className="active-bg"
+                layoutId="sidebar-active"
+                className="absolute inset-0 rounded-[20px] bg-emerald-100 dark:bg-emerald-400/10 border border-emerald-200 dark:border-emerald-300/20 shadow-sm dark:shadow-[0_0_15px_rgba(52,211,153,0.15)]"
                 initial={false}
-                transition={{ type: "spring", stiffness: 500, damping: 32 }}
+                transition={{ type: "spring", stiffness: 400, damping: 30 }}
               />
             )}
-            <span className="menu-label">{item.label}</span>
-          </Menu.Item>
-        ))}
-      </Menu>
+            <item.icon className={`relative z-10 text-xl flex-shrink-0 transition-all duration-300 ${isActive ? "text-emerald-600 dark:text-emerald-300 dark:drop-shadow-[0_0_8px_rgba(52,211,153,0.5)]" : ""}`} />
+            {!collapsed && (
+              <span className="relative z-10 text-[13px] font-bold tracking-wide whitespace-nowrap">
+                {item.label}
+              </span>
+            )}
+          </Link>
+        );
+      })}
+
+      <div className="my-4 h-px w-full bg-gradient-to-r from-transparent via-slate-200 dark:via-white/10 to-transparent" />
+
+      <button
+        onClick={handleLogout}
+        className={`relative flex items-center gap-4 rounded-[20px] border border-transparent px-4 py-3 transition-all duration-300 text-slate-500 dark:text-slate-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 hover:text-rose-600 dark:hover:text-rose-300 hover:border-rose-200 dark:hover:border-rose-400/20 w-full focus-visible:outline-none ${collapsed ? "justify-center px-0" : "justify-start"}`}
+      >
+        <FiLogOut className="relative z-10 text-xl flex-shrink-0" />
+        {!collapsed && (
+          <span className="relative z-10 text-[13px] font-bold tracking-wide whitespace-nowrap">
+            Log Out
+          </span>
+        )}
+      </button>
     </div>
   );
 }

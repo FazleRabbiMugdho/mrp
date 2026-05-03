@@ -1,21 +1,31 @@
 .ant-menu-item {
-  transition: all 0.25s ease !important;
+  margin: 8px 10px !important;
+  border-radius: 22px !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  background: rgba(255, 255, 255, 0.04) !important;
+  transition: transform 0.25s ease, background 0.25s ease !important;
 }
 
 .ant-menu-item:hover {
-  transform: translateX(6px);
+  transform: translateX(4px);
+  background: rgba(255, 255, 255, 0.08) !important;
 }
 
+.ant-menu-item .anticon {
+  color: #86efac;
+}
 
 .active-bg {
   position: absolute;
   inset: 0;
-  border-radius: 8px;
-  background: linear-gradient(90deg, #4f46e5, #3b82f6);
-  z-index: -1;
+  border-radius: 22px;
+  background: linear-gradient(135deg, rgba(52, 211, 153, 0.2), rgba(255, 255, 255, 0.06));
+  z-index: 0;
 }
 
 .menu-label {
   position: relative;
   z-index: 1;
+  color: #f8fafc;
+  font-weight: 700;
 }

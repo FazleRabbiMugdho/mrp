@@ -1,90 +1,142 @@
-import React, { createContext, useState, useContext, useEffect } from "react";
+import React, { createContext, useState, useContext, useEffect, useRef } from "react";
 import { message } from "antd";
 
 const UserContext = createContext();
 const API_BASE = "http://localhost:5000/api";
+const TOKEN_KEY = "userToken";
+const USER_KEY = "userData";
+
+const readStoredUser = () => {
+  const raw = localStorage.getItem(USER_KEY);
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(raw);
+  } catch (error) {
+    console.error("Invalid stored user data:", error);
+    localStorage.removeItem(USER_KEY);
+    return null;
+  }
+};
+
+const clearStoredAuth = () => {
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(USER_KEY);
+};
 
 export function UserProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const activeRequestRef = useRef(null);
+
+  const abortActiveRequest = () => {
+    if (activeRequestRef.current) {
+      activeRequestRef.current.abort();
+      activeRequestRef.current = null;
+    }
+  };
 
   const fetchUser = async () => {
+    abortActiveRequest();
+    const controller = new AbortController();
+    activeRequestRef.current = controller;
+
     try {
-      console.log('Fetching user from server...');
-      
-      // Get the token from localStorage
-      const token = localStorage.getItem('userToken');
+      const token = localStorage.getItem(TOKEN_KEY);
       if (!token) {
-        console.error('No token found');
-        setLoading(false);
+        setUser(null);
         return;
       }
 
-      // Get username from localStorage to use as fallback
-      const userDataFromStorage = JSON.parse(localStorage.getItem('userData') || '{}');
+      const userDataFromStorage = readStoredUser();
       const username = userDataFromStorage?.username;
-      
-      // Try to fetch using the authenticated user endpoint first
+
       let response = await fetch(`${API_BASE}/users/me`, {
         headers: {
           'Authorization': `Bearer ${token}`
-        }
+        },
+        signal: controller.signal
       });
 
-      // If /me endpoint doesn't exist, fall back to username endpoint
       if (response.status === 404 && username) {
-        console.log('Falling back to username endpoint');
         response = await fetch(`${API_BASE}/users/${username}`, {
           headers: {
             'Authorization': `Bearer ${token}`
-          }
+          },
+          signal: controller.signal
         });
       }
-      
+
+      if (response.status === 401 || response.status === 403) {
+        clearStoredAuth();
+        setUser(null);
+        message.error("Session expired. Please log in again.");
+        return;
+      }
+
+      if (localStorage.getItem(TOKEN_KEY) !== token) {
+        return;
+      }
+
       if (response.ok) {
         const userData = await response.json();
-        console.log('User data received:', userData);
         setUser(userData);
       } else {
-        console.error('Failed to fetch user, status:', response.status);
-        // If both endpoints fail, use data from localStorage
         if (userDataFromStorage && Object.keys(userDataFromStorage).length > 0) {
-          console.log('Using user data from localStorage');
           setUser(userDataFromStorage);
         } else {
+          setUser(null);
           message.error("Failed to load user data");
         }
       }
     } catch (error) {
+      if (error?.name === "AbortError") {
+        return;
+      }
       console.error("Failed to fetch user:", error);
-      // Fallback to localStorage data
-      const userDataFromStorage = JSON.parse(localStorage.getItem('userData') || '{}');
+      const userDataFromStorage = readStoredUser();
       if (userDataFromStorage && Object.keys(userDataFromStorage).length > 0) {
         setUser(userDataFromStorage);
       } else {
+        setUser(null);
         message.error("Server not available");
       }
     } finally {
-      setLoading(false);
+      if (activeRequestRef.current === controller) {
+        activeRequestRef.current = null;
+        setLoading(false);
+      }
     }
   };
 
   const refreshUser = async () => {
     setLoading(true);
     await fetchUser();
-    message.success("Data refreshed");
+  };
+
+  const logout = () => {
+    abortActiveRequest();
+    clearStoredAuth();
+    setUser(null);
+    setLoading(false);
+  };
+
+  const setAuthenticatedUser = (nextUser) => {
+    setUser(nextUser);
+    setLoading(false);
   };
 
   useEffect(() => {
     fetchUser();
+    return () => abortActiveRequest();
   }, []);
 
   const updateUser = async (patch) => {
     try {
-      console.log('Sending update to server:', patch);
-      
-      const token = localStorage.getItem('userToken');
-      const userDataFromStorage = JSON.parse(localStorage.getItem('userData') || '{}');
+      const token = localStorage.getItem(TOKEN_KEY);
+      const userDataFromStorage = readStoredUser();
       const username = userDataFromStorage?.username;
 
       if (!username) {
@@ -100,23 +152,24 @@ export function UserProvider({ children }) {
         },
         body: JSON.stringify(patch),
       });
-      
-      console.log('Server response status:', response.status);
-      
+
       if (response.ok) {
         const updatedUser = await response.json();
-        console.log('Server response data:', updatedUser);
-        setUser(updatedUser.user || updatedUser);
-        
-        // Update localStorage with new data
-        const currentUserData = JSON.parse(localStorage.getItem('userData') || '{}');
-        localStorage.setItem('userData', JSON.stringify({
-          ...currentUserData,
-          ...updatedUser.user || updatedUser
-        }));
+        const nextUser = updatedUser.user || updatedUser;
+        const mergedUser = {
+          ...readStoredUser(),
+          ...nextUser
+        };
+        setUser(mergedUser);
+
+        localStorage.setItem(USER_KEY, JSON.stringify(mergedUser));
         
         message.success("Profile updated successfully");
-        return updatedUser;
+        return mergedUser;
+      } else if (response.status === 401 || response.status === 403) {
+        logout();
+        message.error("Session expired. Please log in again.");
+        throw new Error("Authentication failed");
       } else {
         const errorData = await response.json();
         console.error('Server error:', errorData);
@@ -125,6 +178,9 @@ export function UserProvider({ children }) {
       }
     } catch (error) {
       console.error("Update error:", error);
+      if (error?.message === "Authentication failed") {
+        throw error;
+      }
       message.error("Failed to update profile");
       throw error;
     }
@@ -132,8 +188,8 @@ export function UserProvider({ children }) {
 
   const changePassword = async ({ oldPassword, newPassword }) => {
     try {
-      const token = localStorage.getItem('userToken');
-      const userDataFromStorage = JSON.parse(localStorage.getItem('userData') || '{}');
+      const token = localStorage.getItem(TOKEN_KEY);
+      const userDataFromStorage = readStoredUser();
       const username = userDataFromStorage?.username;
 
       if (!username) {
@@ -152,6 +208,10 @@ export function UserProvider({ children }) {
       if (response.ok) {
         message.success("Password updated");
         return true;
+      } else if (response.status === 401 || response.status === 403) {
+        logout();
+        message.error("Session expired. Please log in again.");
+        throw new Error("Authentication failed");
       } else {
         const errorData = await response.json();
         message.error(errorData.message || "Password update failed");
@@ -159,6 +219,9 @@ export function UserProvider({ children }) {
       }
     } catch (error) {
       console.error("Password error:", error);
+      if (error?.message === "Authentication failed") {
+        throw error;
+      }
       message.error("Failed to update password");
       return false;
     }
@@ -169,7 +232,9 @@ export function UserProvider({ children }) {
     loading,
     updateUser,
     changePassword,
-    refreshUser
+    refreshUser,
+    logout,
+    setAuthenticatedUser
   };
 
   return (

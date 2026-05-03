@@ -37,9 +37,6 @@ router.get('/username/:username', async (req, res) => {
 });
 
 router.get('/', authenticateToken, getAllUsers);
-router.get('/:username', authenticateToken, getUser);
-router.put('/:username', authenticateToken, updateUser);
-router.patch('/:username/password', authenticateToken, changePassword);
 
 router.get('/me', authenticateToken, async (req, res) => {
   try {
@@ -51,5 +48,9 @@ router.get('/me', authenticateToken, async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch user' });
   }
 });
+
+router.get('/:username', authenticateToken, getUser);
+router.put('/:username', authenticateToken, updateUser);
+router.patch('/:username/password', authenticateToken, changePassword);
 
 export default router;

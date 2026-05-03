@@ -6,13 +6,23 @@ import connectDB from "./database/db.js";
 import userRoutes from "./routes/userRoutes.js";
 import transactionRoutes from "./routes/transactionRoutes.js";
 import productRoutes from "./routes/productRoutes.js";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 
 dotenv.config();
 const app = express();
 
 
+app.use(helmet());
 app.use(cors());
 app.use(express.json());
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: "Too many requests from this IP, please try again later."
+});
+app.use("/api/", limiter);
 
 connectDB();
 

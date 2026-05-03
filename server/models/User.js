@@ -11,6 +11,7 @@ const userSchema = new mongoose.Schema(
     location: { type: String, required: true, trim: true },
     password: { type: String, required: true },
     role: { type: String, enum: ['User', 'Admin'], default: 'User' },
+    avatar: { type: String, default: '' },
   },
   {
     timestamps: true,

@@ -11,6 +11,7 @@ import {
   Row,
   Col,
   Modal,
+  message,
 } from "antd";
 import {
   CalculatorOutlined,
@@ -18,13 +19,15 @@ import {
   EnvironmentOutlined,
   CheckCircleOutlined,
 } from "@ant-design/icons";
+import { useNavigate } from "react-router-dom";
 import { useUser } from "../state/UserProvider";
-import { motion } from "framer-motion";
+import { motion, useMotionTemplate, useMotionValue } from "framer-motion";
 
 const { Title, Text } = Typography;
 
 const NewTransaction = () => {
-  const { user } = useUser();
+  const navigate = useNavigate();
+  const { user, logout } = useUser();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [buyerUsername, setBuyerUsername] = useState("");
@@ -45,6 +48,11 @@ const NewTransaction = () => {
           if (response.ok) {
             const buyerData = await response.json();
             setBuyerInfo(buyerData);
+          } else if (response.status === 401) {
+            logout();
+            message.error("Session expired. Please log in again.");
+            navigate("/login", { replace: true });
+            setBuyerInfo(null);
           } else {
             setBuyerInfo(null);
           }
@@ -106,6 +114,10 @@ const NewTransaction = () => {
         form.resetFields();
         setBuyerUsername("");
         setBuyerInfo(null);
+      } else if (response.status === 401) {
+        logout();
+        message.error("Session expired. Please log in again.");
+        navigate("/login", { replace: true });
       } else {
         const errorData = await response.json();
         throw new Error(errorData.message || "Failed to place order");
@@ -122,37 +134,65 @@ const NewTransaction = () => {
 
   const isSameUser = buyerInfo && buyerInfo.username === user.username;
 
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+
+  function handleMouseMove({ currentTarget, clientX, clientY }) {
+    const { left, top } = currentTarget.getBoundingClientRect();
+    mouseX.set(clientX - left);
+    mouseY.set(clientY - top);
+  }
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 40 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, ease: "easeOut" }}
-      style={{ padding: "40px", background: "#f9f9fb", minHeight: "100vh" }}
-    >
+    <div className="group relative overflow-hidden" onMouseMove={handleMouseMove} style={{ background: "radial-gradient(circle at top left, rgba(16,185,129,0.14), transparent 30%), linear-gradient(135deg, #0B1A13 0%, #050D0A 55%, #000000 100%)", minHeight: "100vh" }}>
+      <motion.div
+        className="pointer-events-none absolute -inset-px opacity-0 transition duration-300 group-hover:opacity-100 z-0"
+        style={{
+          background: useMotionTemplate`
+            radial-gradient(
+              650px circle at ${mouseX}px ${mouseY}px,
+              rgba(16, 185, 129, 0.15),
+              transparent 80%
+            )
+          `,
+        }}
+      />
+      <motion.div
+        className="relative z-10"
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: "easeOut" }}
+        style={{
+          padding: "40px",
+        }}
+      >
       <Card
         title={
-          <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }}>
-            <Title level={3} style={{ margin: 0 }}>
-              <CalculatorOutlined style={{ marginRight: 8 }} /> New Transaction
+          <motion.div initial={{ scale: 0.96 }} animate={{ scale: 1 }}>
+            <Title level={3} style={{ margin: 0, color: "#fff" }}>
+              <CalculatorOutlined style={{ marginRight: 8, color: "#86efac" }} /> New Transaction
             </Title>
           </motion.div>
         }
         style={{
           maxWidth: 1000,
           margin: "0 auto",
-          borderRadius: "20px",
-          boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
+          borderRadius: "40px",
+          boxShadow: "0 30px 120px rgba(0,0,0,0.35)",
           padding: "24px",
-          background: "#ffffff",
+          background: "rgba(255,255,255,0.08)",
+          border: "1px solid rgba(255,255,255,0.1)",
+          backdropFilter: "blur(20px)",
+          color: "#fff",
         }}
       >
         <Form form={form} layout="vertical" onFinish={handlePlaceOrder} initialValues={{ quantity: 1 }}>
-          <Divider orientation="left">Product & Order Details</Divider>
+          <Divider orientation="left" style={{ color: "#cbd5e1", borderColor: "rgba(255,255,255,0.1)" }}>Product & Order Details</Divider>
           <Row gutter={20}>
             <Col xs={24} sm={12} md={8}>
               <Form.Item
                 name="productName"
-                label={<Text strong>Product Name</Text>}
+                label={<Text strong style={{ color: "#fff" }}>Product Name</Text>}
                 rules={[{ required: true, message: "Please enter product name" }]}
               >
                 <Input placeholder="Enter product name" size="large" />
@@ -161,7 +201,7 @@ const NewTransaction = () => {
             <Col xs={24} sm={12} md={8}>
               <Form.Item
                 name="productPrice"
-                label={<Text strong>Product Price ($)</Text>}
+                label={<Text strong style={{ color: "#fff" }}>Product Price ($)</Text>}
                 rules={[{ required: true, message: "Please enter product price" }]}
               >
                 <Input type="number" step="0.01" placeholder="0.00" prefix="$" size="large" />
@@ -170,7 +210,7 @@ const NewTransaction = () => {
             <Col xs={24} sm={12} md={8}>
               <Form.Item
                 name="quantity"
-                label={<Text strong>Quantity</Text>}
+                label={<Text strong style={{ color: "#fff" }}>Quantity</Text>}
                 rules={[{ required: true, message: "Please enter quantity" }]}
               >
                 <Input type="number" min="1" placeholder="1" size="large" />
@@ -188,14 +228,14 @@ const NewTransaction = () => {
                     <Card
                       size="small"
                       style={{
-                        borderRadius: 12,
-                        background: "#f6ffed",
-                        border: "1px solid #b7eb8f",
+                        borderRadius: 28,
+                        background: "rgba(255,255,255,0.06)",
+                        border: "1px solid rgba(255,255,255,0.1)",
                         textAlign: "center",
                         marginTop: 8,
                       }}
                     >
-                      <Text strong style={{ fontSize: 16, color: "#389e0d" }}>
+                      <Text strong style={{ fontSize: 16, color: "#86efac" }}>
                         <CalculatorOutlined /> Total: ${total}
                       </Text>
                     </Card>
@@ -205,24 +245,24 @@ const NewTransaction = () => {
             </Col>
           </Row>
 
-          <Divider orientation="left">Seller Information</Divider>
+          <Divider orientation="left" style={{ color: "#cbd5e1", borderColor: "rgba(255,255,255,0.1)" }}>Seller Information</Divider>
           <Row gutter={20}>
             <Col xs={24} sm={12}>
-              <Card size="small" bordered style={{ borderRadius: 12 }}>
-                <Text strong><UserOutlined /> Username: </Text> {user?.username || "N/A"}
+              <Card size="small" bordered style={{ borderRadius: 28, background: "rgba(255,255,255,0.06)", borderColor: "rgba(255,255,255,0.1)" }}>
+                <Text strong style={{ color: "#fff" }}><UserOutlined /> Username: </Text> {user?.username || "N/A"}
               </Card>
             </Col>
             <Col xs={24} sm={12}>
-              <Card size="small" bordered style={{ borderRadius: 12 }}>
-                <Text strong><EnvironmentOutlined /> Location: </Text> {user?.location || "N/A"}
+              <Card size="small" bordered style={{ borderRadius: 28, background: "rgba(255,255,255,0.06)", borderColor: "rgba(255,255,255,0.1)" }}>
+                <Text strong style={{ color: "#fff" }}><EnvironmentOutlined /> Location: </Text> {user?.location || "N/A"}
               </Card>
             </Col>
           </Row>
 
-          <Divider orientation="left">Buyer Information</Divider>
-          <Card size="small" bordered={false} style={{ borderRadius: 12, background: "#fafafa" }}>
+          <Divider orientation="left" style={{ color: "#cbd5e1", borderColor: "rgba(255,255,255,0.1)" }}>Buyer Information</Divider>
+          <Card size="small" bordered={false} style={{ borderRadius: 28, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)" }}>
             <Form.Item
-              label={<Text strong>Buyer Username</Text>}
+              label={<Text strong style={{ color: "#fff" }}>Buyer Username</Text>}
               help="Enter the buyer's username"
               style={{ marginBottom: 12 }}
             >
@@ -236,14 +276,14 @@ const NewTransaction = () => {
 
             {buyerLoading && (
               <div style={{ textAlign: "center", margin: "12px 0" }}>
-                <Spin size="small" /> <Text type="secondary">Searching for buyer...</Text>
+                <Spin size="small" /> <Text style={{ color: "#cbd5e1" }}>Searching for buyer...</Text>
               </div>
             )}
 
             {buyerInfo && !buyerLoading && !isSameUser && (
               <Alert
-                message={<span>Buyer Found: <Text strong>{buyerInfo.username}</Text></span>}
-                description={<span>Location: <Text strong>{buyerInfo.location || "N/A"}</Text></span>}
+                message={<span style={{ color: "#fff" }}>Buyer Found: <Text strong style={{ color: "#fff" }}>{buyerInfo.username}</Text></span>}
+                description={<span style={{ color: "#cbd5e1" }}>Location: <Text strong style={{ color: "#fff" }}>{buyerInfo.location || "N/A"}</Text></span>}
                 type="success"
                 showIcon
                 style={{ marginTop: 12 }}
@@ -281,7 +321,7 @@ const NewTransaction = () => {
                 size="large"
                 style={{
                   width: "100%",
-                  borderRadius: "12px",
+                  borderRadius: "9999px",
                   height: "50px",
                   fontSize: "16px",
                   fontWeight: "500",
@@ -293,7 +333,7 @@ const NewTransaction = () => {
           </Form.Item>
         </Form>
 
-        <Modal
+          <Modal
           open={successModalVisible}
           onOk={() => setSuccessModalVisible(false)}
           footer={[
@@ -312,7 +352,8 @@ const NewTransaction = () => {
           </Text>
         </Modal>
       </Card>
-    </motion.div>
+      </motion.div>
+    </div>
   );
 };
 

@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { motion, useMotionTemplate, useMotionValue } from "framer-motion";
 import "./App.css";
 
 const API_BASE = "http://localhost:5000/api";
 
 function Home() {
   const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [showComplain, setShowComplain] = useState(false);
   const [showLocation, setShowLocation] = useState(false);
   const [selectedCity, setSelectedCity] = useState(null);
@@ -24,6 +26,7 @@ function Home() {
   ];
 
   const fetchProducts = async (city) => {
+    setLoading(true);
     try {
       const url = city
         ? `${API_BASE}/products?city=${encodeURIComponent(city)}`
@@ -38,6 +41,8 @@ function Home() {
     } catch (err) {
       console.error("Failed to fetch products:", err);
       setProducts([]);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -63,10 +68,36 @@ function Home() {
     setShowComplain(false);
   };
 
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+
+  function handleMouseMove({ currentTarget, clientX, clientY }) {
+    const { left, top } = currentTarget.getBoundingClientRect();
+    mouseX.set(clientX - left);
+    mouseY.set(clientY - top);
+  }
+
   return (
-    <div className="container">
+    <div className="home-page container group relative overflow-hidden" onMouseMove={handleMouseMove} style={{ minHeight: '100vh' }}>
+      <motion.div
+        className="pointer-events-none absolute -inset-px opacity-0 transition duration-300 group-hover:opacity-100 z-0"
+        style={{
+          background: useMotionTemplate`
+            radial-gradient(
+              650px circle at ${mouseX}px ${mouseY}px,
+              rgba(16, 185, 129, 0.12),
+              transparent 80%
+            )
+          `,
+        }}
+      />
       {/* HEADER */}
-      <header>
+      <motion.header
+        className="relative z-10"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, ease: "easeOut" }}
+      >
         <div className="header-content">
           <div className="logo">M.R.P.</div>
           <div className="version">VERSION 2025</div>
@@ -114,7 +145,7 @@ function Home() {
             </button>
           </div>
         )}
-      </header>
+      </motion.header>
 
       {/* LOCATION PICKER */}
       {showLocation && (
@@ -174,7 +205,12 @@ function Home() {
       )}
 
       {/* PRODUCT LIST */}
-      <section className="deals">
+      <motion.section 
+        className="deals relative z-10"
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
+      >
         <div className="section-title">
           <h2>Today All Product's Price</h2>
           <h3>Set location for better deals</h3>
@@ -184,7 +220,17 @@ function Home() {
         </div>
 
         <div className="products">
-          {Array.isArray(products) && products.length > 0 ? (
+          {loading ? (
+             Array(4).fill(0).map((_, i) => (
+                <div className="product-card overflow-hidden" key={`skel-${i}`} style={{ height: "250px", position: "relative", background: "rgba(255,255,255,0.05)", borderRadius: "16px", border: "1px solid rgba(255,255,255,0.1)" }}>
+                  <div className="animate-pulse" style={{ width: "100%", height: "140px", background: "rgba(255,255,255,0.1)" }}></div>
+                  <div style={{ padding: "16px" }}>
+                    <div className="animate-pulse" style={{ width: "80%", height: "20px", background: "rgba(255,255,255,0.1)", marginBottom: "8px", borderRadius: "4px" }}></div>
+                    <div className="animate-pulse" style={{ width: "40%", height: "20px", background: "rgba(255,255,255,0.1)", borderRadius: "4px" }}></div>
+                  </div>
+                </div>
+             ))
+          ) : Array.isArray(products) && products.length > 0 ? (
             products.map((p) => (
               <div className="product-card" key={p._id}>
                 <div className="product-image">
@@ -213,7 +259,7 @@ function Home() {
             </p>
           )}
         </div>
-      </section>
+      </motion.section>
     </div>
   );
 }
